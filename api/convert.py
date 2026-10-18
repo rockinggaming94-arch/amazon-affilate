@@ -1,4 +1,5 @@
-﻿import re
+import os
+import re
 import json
 import urllib.parse
 import urllib.request
@@ -134,6 +135,38 @@ def convert_to_affiliate_link(raw_input: str, tag: str, subtag: str = None) -> d
 
 
 class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        # Serve the web page (the Python entrypoint handles every route)
+        here = os.path.dirname(os.path.abspath(__file__))
+        candidates = [
+            os.path.join(here, '..', 'index.html'),
+            os.path.join(os.getcwd(), 'index.html'),
+            os.path.join(here, 'index.html'),
+        ]
+        page = None
+        for path in candidates:
+            try:
+                with open(path, 'rb') as f:
+                    page = f.read()
+                break
+            except OSError:
+                continue
+
+        if page is None:
+            msg = b'index.html not found'
+            self.send_response(404)
+            self.send_header('Content-Type', 'text/plain')
+            self.send_header('Content-Length', str(len(msg)))
+            self.end_headers()
+            self.wfile.write(msg)
+            return
+
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.send_header('Content-Length', str(len(page)))
+        self.end_headers()
+        self.wfile.write(page)
+
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
@@ -170,3 +203,4 @@ class handler(BaseHTTPRequestHandler):
         self.send_header('Content-Length', str(len(response_bytes)))
         self.end_headers()
         self.wfile.write(response_bytes)
+        
