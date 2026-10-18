@@ -1,2 +1,6 @@
-[tool.vercel]
-entrypoint = "api.convert:handler"
+[project]
+name = "amazon-affiliate"
+version = "0.1.0"
+description = "Amazon.in affiliate link generator"
+requires-python = ">=3.12"
+dependencies = []
