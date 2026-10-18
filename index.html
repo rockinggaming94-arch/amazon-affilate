@@ -1,0 +1,632 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Amazon.in Affiliate Link Generator</title>
+  <meta name="description" content="Convert any Amazon.in product link into a clean affiliate link instantly. Supports full URLs, short links (amzn.in, amzn.to), and ASINs." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-card: #12121a;
+      --bg-card2: #1a1a28;
+      --border: rgba(255,255,255,0.07);
+      --accent: #ff9500;
+      --accent2: #ff6b00;
+      --accent-glow: rgba(255,149,0,0.18);
+      --text-primary: #f0f0f5;
+      --text-secondary: #8b8b9e;
+      --text-muted: #5a5a6e;
+      --success: #22c55e;
+      --error: #ef4444;
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── Background Orbs ─── */
+    .bg-orbs {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    }
+    .orb {
+      position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.12;
+      animation: orbFloat 12s ease-in-out infinite;
+    }
+    .orb-1 { width: 500px; height: 500px; background: #ff9500; top: -150px; left: -100px; animation-delay: 0s; }
+    .orb-2 { width: 400px; height: 400px; background: #ff3c00; bottom: -100px; right: -80px; animation-delay: -4s; }
+    .orb-3 { width: 300px; height: 300px; background: #ffd000; top: 40%; left: 55%; animation-delay: -8s; }
+
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -30px) scale(1.05); }
+      66% { transform: translate(-20px, 20px) scale(0.95); }
+    }
+
+    /* ─── Layout ─── */
+    .wrapper {
+      position: relative; z-index: 1;
+      max-width: 780px; margin: 0 auto; padding: 0 20px 80px;
+    }
+
+    /* ─── Header ─── */
+    header {
+      text-align: center; padding: 60px 0 48px;
+    }
+    .logo-badge {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: rgba(255,149,0,0.1); border: 1px solid rgba(255,149,0,0.25);
+      border-radius: 100px; padding: 8px 20px; margin-bottom: 28px;
+      font-size: 13px; font-weight: 600; color: var(--accent);
+      letter-spacing: 0.5px;
+    }
+    .logo-badge svg { width: 16px; height: 16px; }
+    h1 {
+      font-size: clamp(2rem, 5vw, 3rem); font-weight: 800;
+      line-height: 1.15; letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #ffffff 0%, #ff9500 60%, #ff3c00 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .subtitle {
+      margin-top: 14px; font-size: 16px; color: var(--text-secondary);
+      max-width: 520px; margin-left: auto; margin-right: auto; line-height: 1.7;
+    }
+
+    /* ─── Card ─── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-bottom: 16px;
+      transition: border-color 0.3s;
+    }
+    .card:hover { border-color: rgba(255,149,0,0.2); }
+
+    /* ─── Tag Section ─── */
+    .section-label {
+      font-size: 12px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;
+    }
+    .tag-row {
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    }
+    .tag-input {
+      flex: 1; min-width: 180px;
+      background: var(--bg-card2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 11px 16px;
+      font-family: 'Inter', monospace; font-size: 14px; color: var(--text-primary);
+      outline: none; transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    .tag-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .tag-input::placeholder { color: var(--text-muted); }
+    .tag-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,149,0,0.12); border: 1px solid rgba(255,149,0,0.3);
+      border-radius: 8px; padding: 8px 14px;
+      font-size: 13px; font-weight: 600; color: var(--accent);
+      white-space: nowrap;
+    }
+    .tag-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+    /* ─── URL Input ─── */
+    .url-area {
+      position: relative;
+    }
+    .url-textarea {
+      width: 100%;
+      background: var(--bg-card2); border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); padding: 16px 18px;
+      font-family: 'Inter', sans-serif; font-size: 14px;
+      color: var(--text-primary); resize: none; height: 100px;
+      outline: none; transition: border-color 0.25s, box-shadow 0.25s;
+      line-height: 1.6;
+    }
+    .url-textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .url-textarea::placeholder { color: var(--text-muted); }
+
+    /* ─── Convert Button ─── */
+    .btn-convert {
+      width: 100%; margin-top: 14px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none; border-radius: var(--radius-sm);
+      padding: 15px 28px; font-family: 'Inter', sans-serif;
+      font-size: 15px; font-weight: 700; color: #fff;
+      cursor: pointer; letter-spacing: 0.02em;
+      box-shadow: 0 4px 24px rgba(255,107,0,0.3);
+      transition: transform 0.18s, box-shadow 0.18s, opacity 0.18s;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .btn-convert:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(255,107,0,0.45);
+    }
+    .btn-convert:active:not(:disabled) { transform: translateY(0); }
+    .btn-convert:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* ─── Spinner ─── */
+    .spinner {
+      width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,0.3);
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── Result Card ─── */
+    .result-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(34,197,94,0.25);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      margin-bottom: 16px;
+      animation: slideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: none;
+    }
+    .result-card.show { display: block; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(16px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .result-header {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+    }
+    .result-icon {
+      width: 36px; height: 36px; background: rgba(34,197,94,0.15);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    }
+    .result-title { font-size: 15px; font-weight: 700; color: var(--success); }
+    .result-meta {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;
+    }
+    .meta-chip {
+      background: var(--bg-card2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 5px 12px;
+      font-size: 12px; font-weight: 600; color: var(--text-secondary);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .meta-chip span { color: var(--text-primary); }
+    .aff-link-box {
+      background: var(--bg-card2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 14px 16px;
+      font-family: monospace; font-size: 13px; color: var(--accent);
+      word-break: break-all; line-height: 1.5;
+      position: relative;
+    }
+    .copy-btn {
+      margin-top: 12px; width: 100%;
+      background: rgba(255,149,0,0.1); border: 1px solid rgba(255,149,0,0.3);
+      border-radius: var(--radius-sm); padding: 11px;
+      font-family: 'Inter', sans-serif; font-size: 13px;
+      font-weight: 600; color: var(--accent); cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .copy-btn:hover { background: rgba(255,149,0,0.18); transform: translateY(-1px); }
+    .copy-btn.copied { color: var(--success); border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.08); }
+
+    .open-btn {
+      margin-top: 8px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+      background: transparent; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 11px;
+      font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+      color: var(--text-secondary); cursor: pointer; text-decoration: none;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+    }
+    .open-btn:hover { background: var(--bg-card2); color: var(--text-primary); border-color: rgba(255,255,255,0.15); }
+
+    /* ─── Error Card ─── */
+    .error-card {
+      background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.25);
+      border-radius: var(--radius); padding: 18px 22px;
+      display: flex; align-items: flex-start; gap: 12px;
+      margin-bottom: 16px; animation: slideIn 0.3s ease;
+      display: none;
+    }
+    .error-card.show { display: flex; }
+    .error-card svg { flex-shrink: 0; margin-top: 1px; }
+    .error-text { font-size: 14px; color: #fca5a5; line-height: 1.5; }
+
+    /* ─── History ─── */
+    .history-section { margin-top: 10px; }
+    .history-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .history-title {
+      font-size: 13px; font-weight: 700; color: var(--text-secondary);
+      text-transform: uppercase; letter-spacing: 0.07em;
+    }
+    .clear-btn {
+      background: none; border: none; color: var(--text-muted);
+      font-size: 12px; cursor: pointer; font-family: 'Inter', sans-serif;
+      transition: color 0.2s;
+    }
+    .clear-btn:hover { color: var(--error); }
+
+    .history-list { display: flex; flex-direction: column; gap: 8px; }
+    .history-item {
+      background: var(--bg-card2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 12px 16px;
+      display: flex; align-items: center; gap: 12px;
+      animation: slideIn 0.3s ease;
+      transition: border-color 0.2s;
+    }
+    .history-item:hover { border-color: rgba(255,149,0,0.2); }
+    .history-asin {
+      background: rgba(255,149,0,0.1); border: 1px solid rgba(255,149,0,0.2);
+      border-radius: 6px; padding: 3px 8px;
+      font-size: 11px; font-weight: 700; color: var(--accent);
+      font-family: monospace; white-space: nowrap;
+    }
+    .history-url {
+      flex: 1; font-size: 12px; color: var(--text-secondary);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .history-copy {
+      background: none; border: none; color: var(--text-muted);
+      cursor: pointer; padding: 4px; border-radius: 6px;
+      transition: color 0.2s, background 0.2s;
+      display: flex; align-items: center;
+    }
+    .history-copy:hover { color: var(--accent); background: rgba(255,149,0,0.1); }
+
+    .no-history {
+      text-align: center; padding: 24px;
+      font-size: 13px; color: var(--text-muted); font-style: italic;
+    }
+
+    /* ─── Supported formats ─── */
+    .formats-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    @media (max-width: 500px) { .formats-grid { grid-template-columns: 1fr; } }
+    .format-item {
+      background: var(--bg-card2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 12px 14px;
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+    .format-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .format-label { font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+    .format-example { font-size: 11px; color: var(--text-muted); font-family: monospace; }
+
+    /* ─── Footer ─── */
+    footer {
+      text-align: center; padding: 40px 20px 20px;
+      font-size: 12px; color: var(--text-muted);
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<div class="bg-orbs">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<div class="wrapper">
+
+  <!-- Header -->
+  <header>
+    <div class="logo-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      Amazon.in Affiliate Tool
+    </div>
+    <h1>Turn Any Amazon Link Into<br/>Your Affiliate Link</h1>
+    <p class="subtitle">Paste any Amazon.in URL, short link, or ASIN and get a clean affiliate link in seconds. Supports <code style="background:rgba(255,149,0,0.1);color:var(--accent);padding:1px 6px;border-radius:4px;">amzn.in</code>, <code style="background:rgba(255,149,0,0.1);color:var(--accent);padding:1px 6px;border-radius:4px;">amzn.to</code> &amp; full URLs.</p>
+  </header>
+
+  <!-- Affiliate Tag Card -->
+  <div class="card">
+    <div class="section-label">Your Affiliate Tag</div>
+    <div class="tag-row">
+      <input
+        id="tag-input"
+        class="tag-input"
+        type="text"
+        placeholder="e.g. yourname-21"
+        autocomplete="off"
+        spellcheck="false"
+        value=""
+      />
+      <div class="tag-badge">
+        <div class="dot"></div>
+        <span id="tag-display">Not set</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Converter Card -->
+  <div class="card">
+    <div class="section-label">Amazon Link or ASIN</div>
+    <div class="url-area">
+      <textarea
+        id="url-input"
+        class="url-textarea"
+        placeholder="Paste Amazon URL, amzn.in/d/..., amzn.to/..., or a 10-digit ASIN&#10;&#10;Example: https://amzn.in/d/abc123xyz"
+        spellcheck="false"
+        autocomplete="off"
+      ></textarea>
+    </div>
+    <button class="btn-convert" id="convert-btn" onclick="convertLink()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polyline></svg>
+      Generate Affiliate Link
+    </button>
+  </div>
+
+  <!-- Error -->
+  <div class="error-card" id="error-card">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+    <div class="error-text" id="error-text"></div>
+  </div>
+
+  <!-- Result -->
+  <div class="result-card" id="result-card">
+    <div class="result-header">
+      <div class="result-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="result-title">✓ Affiliate Link Generated!</div>
+    </div>
+    <div class="result-meta">
+      <div class="meta-chip">ASIN <span id="res-asin">—</span></div>
+      <div class="meta-chip">Tag <span id="res-tag">—</span></div>
+      <div class="meta-chip">Domain <span>amazon.in</span></div>
+    </div>
+    <div class="aff-link-box" id="res-url"></div>
+    <button class="copy-btn" id="copy-btn" onclick="copyLink()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+      Copy Affiliate Link
+    </button>
+    <a class="open-btn" id="open-btn" href="#" target="_blank" rel="noopener">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      Open on Amazon.in
+    </a>
+  </div>
+
+  <!-- Supported Formats -->
+  <div class="card">
+    <div class="section-label" style="margin-bottom:14px;">Supported Input Formats</div>
+    <div class="formats-grid">
+      <div class="format-item">
+        <div class="format-icon">🔗</div>
+        <div>
+          <div class="format-label">Full Amazon URL</div>
+          <div class="format-example">amazon.in/dp/B0CHX1W1XY?...</div>
+        </div>
+      </div>
+      <div class="format-item">
+        <div class="format-icon">📱</div>
+        <div>
+          <div class="format-label">App Short Link</div>
+          <div class="format-example">amzn.in/d/abc123</div>
+        </div>
+      </div>
+      <div class="format-item">
+        <div class="format-icon">🖥️</div>
+        <div>
+          <div class="format-label">Desktop Short Link</div>
+          <div class="format-example">amzn.to/3xyz...</div>
+        </div>
+      </div>
+      <div class="format-item">
+        <div class="format-icon">🔑</div>
+        <div>
+          <div class="format-label">Bare ASIN</div>
+          <div class="format-example">B0CHX1W1XY</div>
+        </div>
+      </div>
+      <div class="format-item">
+        <div class="format-icon">📋</div>
+        <div>
+          <div class="format-label">Copied App Text</div>
+          <div class="format-example">Full share text from Amazon app</div>
+        </div>
+      </div>
+      <div class="format-item">
+        <div class="format-icon">🔀</div>
+        <div>
+          <div class="format-label">Generic Shorteners</div>
+          <div class="format-example">bit.ly, tinyurl.com, etc.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="card history-section">
+    <div class="history-header">
+      <div class="history-title">Recent Conversions</div>
+      <button class="clear-btn" onclick="clearHistory()">Clear all</button>
+    </div>
+    <div class="history-list" id="history-list">
+      <div class="no-history">No conversions yet. Generate your first link above!</div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Built for Amazon Associates India &bull; Supports all amazon.in link formats &bull;
+  <a href="https://affiliate-program.amazon.in/" target="_blank" rel="noopener">Amazon Associates</a>
+</footer>
+
+<script>
+  // ─── State ───────────────────────────────────────────────────
+  const STORAGE_TAG_KEY = 'amz_aff_tag';
+  const STORAGE_HISTORY_KEY = 'amz_aff_history';
+  const API_URL = '/api/convert';
+  let currentAffLink = '';
+
+  // ─── Init ────────────────────────────────────────────────────
+  function init() {
+    const savedTag = localStorage.getItem(STORAGE_TAG_KEY) || '';
+    if (savedTag) {
+      document.getElementById('tag-input').value = savedTag;
+      document.getElementById('tag-display').textContent = savedTag;
+    }
+    renderHistory();
+
+    document.getElementById('tag-input').addEventListener('input', e => {
+      const val = e.target.value.trim();
+      document.getElementById('tag-display').textContent = val || 'Not set';
+      if (val) localStorage.setItem(STORAGE_TAG_KEY, val);
+    });
+  }
+
+  // ─── Convert ─────────────────────────────────────────────────
+  async function convertLink() {
+    const rawUrl = document.getElementById('url-input').value.trim();
+    const tag = document.getElementById('tag-input').value.trim();
+
+    hideResult(); hideError();
+
+    if (!rawUrl) { showError('Please paste an Amazon link, short URL, or ASIN.'); return; }
+    if (!tag) { showError('Please enter your Amazon Associates affiliate tag (e.g. yourname-21).'); return; }
+
+    setLoading(true);
+
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: rawUrl, tag: tag, subtag: 'website' })
+      });
+
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const data = await res.json();
+
+      if (data.success) {
+        showResult(data);
+        addToHistory({ asin: data.asin, url: data.affiliate_url, tag: data.tag || tag, ts: Date.now() });
+      } else {
+        showError(data.error || 'Could not convert this link.');
+      }
+    } catch (err) {
+      showError('Network error. Make sure you are connected and try again.<br><small style="opacity:.6;">' + err.message + '</small>');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ─── UI Helpers ──────────────────────────────────────────────
+  function setLoading(on) {
+    const btn = document.getElementById('convert-btn');
+    btn.disabled = on;
+    btn.innerHTML = on
+      ? '<div class="spinner"></div> Resolving Link...'
+      : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polyline></svg> Generate Affiliate Link';
+  }
+
+  function showResult(data) {
+    currentAffLink = data.affiliate_url;
+    document.getElementById('res-asin').textContent = data.asin;
+    document.getElementById('res-tag').textContent = data.tag || document.getElementById('tag-input').value.trim();
+    document.getElementById('res-url').textContent = data.affiliate_url;
+    document.getElementById('open-btn').href = data.affiliate_url;
+    const card = document.getElementById('result-card');
+    card.classList.add('show');
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // reset copy btn
+    const copyBtn = document.getElementById('copy-btn');
+    copyBtn.classList.remove('copied');
+    copyBtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Affiliate Link';
+  }
+
+  function hideResult() { document.getElementById('result-card').classList.remove('show'); }
+
+  function showError(msg) {
+    const card = document.getElementById('error-card');
+    document.getElementById('error-text').innerHTML = msg;
+    card.classList.add('show');
+  }
+
+  function hideError() { document.getElementById('error-card').classList.remove('show'); }
+
+  function copyLink() {
+    if (!currentAffLink) return;
+    navigator.clipboard.writeText(currentAffLink).then(() => {
+      const btn = document.getElementById('copy-btn');
+      btn.classList.add('copied');
+      btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Affiliate Link';
+      }, 2200);
+    });
+  }
+
+  // ─── History ─────────────────────────────────────────────────
+  function getHistory() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_HISTORY_KEY)) || []; }
+    catch { return []; }
+  }
+
+  function addToHistory(item) {
+    let h = getHistory();
+    h = [item, ...h.filter(x => x.asin !== item.asin)].slice(0, 15);
+    localStorage.setItem(STORAGE_HISTORY_KEY, JSON.stringify(h));
+    renderHistory();
+  }
+
+  function clearHistory() {
+    localStorage.removeItem(STORAGE_HISTORY_KEY);
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const list = document.getElementById('history-list');
+    const h = getHistory();
+    if (!h.length) {
+      list.innerHTML = '<div class="no-history">No conversions yet. Generate your first link above!</div>';
+      return;
+    }
+    list.innerHTML = h.map((item, i) => `
+      <div class="history-item">
+        <div class="history-asin">${item.asin}</div>
+        <div class="history-url">${item.url}</div>
+        <button class="history-copy" title="Copy link" onclick="copyHistoryItem(${i})">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        </button>
+      </div>
+    `).join('');
+  }
+
+  function copyHistoryItem(index) {
+    const h = getHistory();
+    if (h[index]) navigator.clipboard.writeText(h[index].url);
+  }
+
+  // ─── Keyboard shortcut: Ctrl+Enter ───────────────────────────
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') convertLink();
+  });
+
+  init();
+</script>
+</body>
+</html>
